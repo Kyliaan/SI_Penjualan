@@ -72,17 +72,22 @@ class PromoCodeResource extends Resource
             ])
 
             // Aksi per baris
-            ->actions([
-                Tables\Actions\EditAction::make(),
+           ->actions([
+    Tables\Actions\EditAction::make()
+        ->visible(fn (PromoCode $record) => ! $record->trashed()),
 
-                Tables\Actions\DeleteAction::make()
-                    ->requiresConfirmation(),
+    Tables\Actions\DeleteAction::make()
+        ->requiresConfirmation()
+        ->visible(fn (PromoCode $record) => ! $record->trashed()),
 
-                Tables\Actions\RestoreAction::make(), // 👈 restore
+    Tables\Actions\RestoreAction::make()
+        ->visible(fn (PromoCode $record) => $record->trashed()),
 
-                Tables\Actions\ForceDeleteAction::make() // 🔥 HAPUS PERMANEN
-        ->requiresConfirmation(),
-            ])
+    Tables\Actions\ForceDeleteAction::make()
+        ->requiresConfirmation()
+        ->visible(fn (PromoCode $record) => $record->trashed()),
+])
+
 
             // Aksi massal
             ->bulkActions([

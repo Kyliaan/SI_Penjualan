@@ -241,30 +241,35 @@ class ProductTransactionResource extends Resource
                 Tables\Filters\SelectFilter::make('produk_id')
                     ->relationship('produk', 'name')
                     ->label('Product'),
-                    Tables\Filters\TrashedFilter::make(),
+                Tables\Filters\TrashedFilter::make(),
             ])
 
             // Aksi per baris
             ->actions([
-                Tables\Actions\EditAction::make(),   // edit
-                Tables\Actions\DeleteAction::make(), // hapus
-                 Tables\Actions\RestoreAction::make(),
-                  Tables\Actions\ForceDeleteAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn (ProductTransaction $record) => ! $record->trashed()),
 
-                // Approve pembayaran
+                Tables\Actions\DeleteAction::make()
+                    ->visible(fn (ProductTransaction $record) => ! $record->trashed()),
+
+                Tables\Actions\RestoreAction::make()
+                    ->visible(fn (ProductTransaction $record) => $record->trashed()),
+
+                Tables\Actions\ForceDeleteAction::make()
+                    ->visible(fn (ProductTransaction $record) => $record->trashed()),
+
                 Tables\Actions\Action::make('approve')
                     ->label('Approve')
-                    ->visible(fn (ProductTransaction $record) => ! $record->is_paid)
+                    ->visible(fn (ProductTransaction $record) => ! $record->is_paid && ! $record->trashed()
+                    )
                     ->requiresConfirmation()
-                    ->action(function (ProductTransaction $record) {
-                        $record->is_paid = true; // set paid
-                        $record->save();
-                    }),
+                    ->action(fn (ProductTransaction $record) => $record->update(['is_paid' => true])
+                    ),
 
-                // Download bukti bayar
                 Tables\Actions\Action::make('download_proof')
                     ->label('Download Proof')
-                    ->visible(fn (ProductTransaction $record) => ! empty($record->proof))
+                    ->visible(fn (ProductTransaction $record) => ! $record->trashed() && ! empty($record->proof)
+                    )
                     ->action(fn (ProductTransaction $record) => response()->download(
                         storage_path('app/public/'.$record->proof)
                     )
@@ -275,18 +280,17 @@ class ProductTransactionResource extends Resource
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
                 Tables\Actions\RestoreBulkAction::make(),
-    Tables\Actions\ForceDeleteBulkAction::make(),
+                Tables\Actions\ForceDeleteBulkAction::make(),
             ]);
     }
 
     public static function getEloquentQuery(): Builder
-{
-    return parent::getEloquentQuery()
-        ->withoutGlobalScopes([
-            SoftDeletingScope::class,
-        ]);
-}
-
+    {
+        return parent::getEloquentQuery()
+            ->withoutGlobalScopes([
+                SoftDeletingScope::class,
+            ]);
+    }
 
     // PAGES
     public static function getPages(): array

@@ -67,14 +67,19 @@ class CategoryResource extends Resource
 
             // Aksi per baris
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn (Category $record) => ! $record->trashed()),
 
                 Tables\Actions\DeleteAction::make()
-                    ->requiresConfirmation(),
+                    ->requiresConfirmation()
+                    ->visible(fn (Category $record) => ! $record->trashed()),
 
-                Tables\Actions\RestoreAction::make(), // restore data
-                Tables\Actions\ForceDeleteAction::make() // hapus permanen data
-                    ->requiresConfirmation(),
+                Tables\Actions\RestoreAction::make()
+                    ->visible(fn (Category $record) => $record->trashed()),
+
+                Tables\Actions\ForceDeleteAction::make()
+                    ->requiresConfirmation()
+                    ->visible(fn (Category $record) => $record->trashed()),
             ])
 
             // Aksi banyak data

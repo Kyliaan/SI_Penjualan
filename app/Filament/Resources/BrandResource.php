@@ -67,16 +67,19 @@ class BrandResource extends Resource
 
             // Aksi per baris
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn (Brand $record) => ! $record->trashed()),
 
                 Tables\Actions\DeleteAction::make()
-                    ->requiresConfirmation(),
+                    ->requiresConfirmation()
+                    ->visible(fn (Brand $record) => ! $record->trashed()),
 
-                Tables\Actions\RestoreAction::make(), // restore data
+                Tables\Actions\RestoreAction::make()
+                    ->visible(fn (Brand $record) => $record->trashed()),
 
-                Tables\Actions\ForceDeleteAction::make() // hapus permanen
-                    ->requiresConfirmation(),
-
+                Tables\Actions\ForceDeleteAction::make()
+                    ->requiresConfirmation()
+                    ->visible(fn (Brand $record) => $record->trashed()),
             ])
 
             // Aksi banyak data
