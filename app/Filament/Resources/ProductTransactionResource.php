@@ -11,6 +11,8 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class ProductTransactionResource extends Resource
 {
@@ -239,12 +241,15 @@ class ProductTransactionResource extends Resource
                 Tables\Filters\SelectFilter::make('produk_id')
                     ->relationship('produk', 'name')
                     ->label('Product'),
+                    Tables\Filters\TrashedFilter::make(),
             ])
 
             // Aksi per baris
             ->actions([
                 Tables\Actions\EditAction::make(),   // edit
                 Tables\Actions\DeleteAction::make(), // hapus
+                 Tables\Actions\RestoreAction::make(),
+                  Tables\Actions\ForceDeleteAction::make(),
 
                 // Approve pembayaran
                 Tables\Actions\Action::make('approve')
@@ -269,8 +274,19 @@ class ProductTransactionResource extends Resource
             // Hapus banyak data
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
+                Tables\Actions\RestoreBulkAction::make(),
+    Tables\Actions\ForceDeleteBulkAction::make(),
             ]);
     }
+
+    public static function getEloquentQuery(): Builder
+{
+    return parent::getEloquentQuery()
+        ->withoutGlobalScopes([
+            SoftDeletingScope::class,
+        ]);
+}
+
 
     // PAGES
     public static function getPages(): array

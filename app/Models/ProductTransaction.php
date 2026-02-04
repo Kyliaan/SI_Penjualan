@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductTransaction extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -29,7 +30,6 @@ class ProductTransaction extends Model
         'promo_code_id',
         'proof',
     ];
-
 
     protected static function booted()
     {
@@ -53,7 +53,6 @@ class ProductTransaction extends Model
             }
         });
     }
-    
 
     public static function generateUniqueTrxId(): string
     {
