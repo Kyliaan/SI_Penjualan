@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Validation\ValidationException;
 
 class ProductTransaction extends Model
 {
@@ -29,22 +30,51 @@ class ProductTransaction extends Model
         'proof',
     ];
 
+
+    protected static function booted()
+    {
+        static::creating(function ($transaction) {
+
+            $produk = Produk::lockForUpdate()->find($transaction->produk_id);
+
+            if (! $produk) {
+                throw ValidationException::withMessages([
+                    'produk_id' => 'Produk tidak ditemukan',
+                ]);
+            }
+
+            if ($produk->stock < $transaction->quantity) {
+                throw ValidationException::withMessages([
+                    'quantity' => 'Stok tidak mencukupi. Sisa stok: ' . $produk->stock,
+                ]);
+            }
+             if ($produk) {
+                $produk->decrement('stock', $transaction->quantity);
+            }
+        });
+    }
+    
+
     public static function generateUniqueTrxId(): string
     {
-        $prefix = 'TJH';
+        $prefix = 'TRX-';
+
         do {
-            $randomString = $prefix . mt_rand(min: 10001, max: 99999);
-        } while (self::where(column: 'booking_trx_id', operator: $randomString)->exists());
+            $randomString = $prefix . mt_rand(10001, 99999);
+        } while (self::where('booking_trx_id', $randomString)->exists());
+
         return $randomString;
-        }
+    }
+
     public function produk(): BelongsTo
     {
-        return $this->belongsTo(related: Produk::class, foreignKey: 'produk_id');
+        return $this->belongsTo(Produk::class, 'produk_id');
     }
 
     public function promoCode(): BelongsTo
     {
-        return $this->belongsTo(related: PromoCode::class, foreignKey: 'promo_code_id');
+        return $this->belongsTo(PromoCode::class, 'promo_code_id');
     }
 
-  }
+
+}

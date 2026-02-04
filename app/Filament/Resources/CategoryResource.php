@@ -8,52 +8,95 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
+
 class CategoryResource extends Resource
 {
+    // Model yang digunakan
     protected static ?string $model = Category::class;
+
+    // Icon sidebar
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+
+    // Form tambah & edit kategori
     public static function form(Form $form): Form
     {
-        return $form
-            ->schema(components: [
-                Forms\Components\TextInput::make(name:  'name')
+        return $form->schema([
+
+            // Input nama kategori
+            Forms\Components\TextInput::make('name')
                 ->required()
-                ->maxLength(255),
-                Forms\Components\FileUpload::make(name:  'icon')
+                ->maxLength(255)
+                ->unique(
+                    table: Category::class,
+                    column: 'name',
+                    ignoreRecord: true
+                ),
+
+            // Upload icon kategori
+            Forms\Components\FileUpload::make('icon')
                 ->image()
-                ->directory(directory:  'categories')
-                ->maxSize(size: 1024)
-                ->required()
-                ->nullable(),
-            ]);
+                ->directory('categories')
+                ->maxSize(1024)
+                ->required(),
+        ]);
     }
 
+    // Tabel daftar kategori
     public static function table(Table $table): Table
     {
         return $table
-            ->columns(components: [
-                Tables\Columns\TextColumn::make(name: 'name')->searchable(),
-                Tables\Columns\ImageColumn::make(name: 'icon')->circular(),
+            ->columns([
+
+                // Kolom nama kategori
+                Tables\Columns\TextColumn::make('name')
+                    ->searchable(),
+
+                // Kolom icon kategori
+                Tables\Columns\ImageColumn::make('icon')
+                    ->circular(),
             ])
+
+            // Filter data terhapus
             ->filters([
+                TrashedFilter::make(),
             ])
+
+            // Aksi per baris
             ->actions([
                 Tables\Actions\EditAction::make(),
+
+                Tables\Actions\DeleteAction::make()
+                    ->requiresConfirmation(),
+
+                Tables\Actions\RestoreAction::make(), // restore data
+                Tables\Actions\ForceDeleteAction::make() // hapus permanen data
+                    ->requiresConfirmation(),
             ])
+
+            // Aksi banyak data
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\RestoreBulkAction::make(), // restore massal
+                    Tables\Actions\ForceDeleteBulkAction::make(), // hapus permanen massal
                 ]),
             ]);
     }
 
-    public static function getRelations(): array
+    // Query supaya bisa baca data soft delete
+    public static function getEloquentQuery(): Builder
     {
-        return [
-        ];
+        return parent::getEloquentQuery()
+            ->withoutGlobalScopes([
+                SoftDeletingScope::class,
+            ]);
     }
 
+    // Halaman resource
     public static function getPages(): array
     {
         return [
